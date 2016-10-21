@@ -1,4 +1,4 @@
-#  chale
+# JS / Node challenge
 A fun JS / Node challenge
 JS code task
 
