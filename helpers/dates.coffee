@@ -11,5 +11,4 @@ exports.getDates = (date) ->
   range.by(c.RANGE_TYPE, (moment) ->
     dates.push moment.format(c.DATE_FORMAT)
   )
-  
   dates

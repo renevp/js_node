@@ -1,14 +1,37 @@
+const RANGE_TYPE = 'days';
+const RANGE_NUMBER = 2;
+const DATE_FORMAT = 'Y-M-DD';
+
+function getDates(travelDate){
+	var dates = [];
+	if (RANGE_NUMBER == 0) {
+		dates.push(travelDate);
+		return dates;
+	}
+
+	var start = moment(travelDate).subtract(RANGE_NUMBER, RANGE_TYPE);
+  var finish = moment(travelDate).add(RANGE_NUMBER + 1, RANGE_TYPE);
+
+	while (moment(start).isBefore(finish)) {
+		dates.push(start.format(DATE_FORMAT));
+		start = moment(start).add(1, 'days');
+	}
+
+  return dates;
+
+}
+
+function addTab(tabTitle, tabTemplate, tabCounter, tabs) {
+  var label = tabTitle || "Tab " + tabCounter,
+    id = "tabs-" + tabCounter,
+    li = tabTemplate;
+
+  tabs.find( ".ui-tabs-nav" ).append( li );
+  tabs.append( "<div id='" + id + "'><ul></ul></div>" );
+  tabs.tabs( "refresh" );
+}
+
 $(document).ready(function(){
-
-	$('ul.tabs li').click(function(){
-		var tab_id = $(this).attr('data-tab');
-
-		$('ul.tabs li').removeClass('current');
-		$('.tab-content').removeClass('current');
-
-		$(this).addClass('current');
-		$("#"+tab_id).addClass('current');
-	})
 
   $( "#autocomplete-from" ).autocomplete({
     source: function( request, response ) {
@@ -18,7 +41,7 @@ $(document).ready(function(){
             response(data);
         });
     },
-    minLength: 3
+    minLength: 2
   } );
 
 	$( "#autocomplete-to" ).autocomplete({
@@ -29,17 +52,13 @@ $(document).ready(function(){
             response(data);
         });
     },
-    minLength: 3
+    minLength: 2
   } );
 
 	$( "#travel-date" ).datepicker({ dateFormat: 'yy-mm-dd' });
 
-	$("ul[class*=myid] li").click(function () {
-	    $('ul.myid li').removeClass('item-highlight');
-	    $(this).addClass('item-highlight');
-	});
-
 	$("button").click(function(){
+
 		var request = $.ajax({
 		  url: "/search",
 		  method: "GET",
@@ -50,10 +69,20 @@ $(document).ready(function(){
 		});
 
 		request.done(function( json ) {
+			var travelDate = $( "#travel-date" ).val();
+			var tabCounter = 1;
+			$.each(getDates(travelDate), function(key, date){
+				var tabTitle = date,
+			      tabTemplate = '<li><a href="#tabs-'+date+'">'+date+'</a></li>';
+				var tabs = $( "#tabs" ).tabs();
+				addTab(tabTitle, tabTemplate, date, tabs);
+				tabCounter++;
+			});
+
 			var flights = JSON.parse(json);
-			$(".container ul li").text($( "#travel-date" ).val());
 			$.each(flights, function(key, flight){
-            $("#tab-1 ul").append('<li class="item-content">'+
+						var date = moment(flight.start.dateTime).format(DATE_FORMAT);
+            $("#tabs-"+date+" ul").append('<li class="item-content">'+
 																			"Airline: " + flight.airline.name + " " +
 																			"Start: " + " " +
 																			flight.start.cityName + ", " +
