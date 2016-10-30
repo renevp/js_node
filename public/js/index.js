@@ -18,13 +18,14 @@ function getDates(travelDate){
 	}
 
   return dates;
-
 }
 
-function addTab(date) {
+function addTab(travelDate, fromCode, toCode) {
 	var tabs = $( "#tabs" ).tabs(),
-			li = '<li><a href="#tabs-'+date+'">'+date+'</a></li>',
-	    id = "tabs-" + date;
+			li = '<li><a href="#tabs-'+travelDate+'" data-date="'+
+			travelDate+'" data-from="'+fromCode+'" data-to="'+toCode+'">'+
+			travelDate+'</a></li>',
+	    id = "tabs-" + travelDate;
 
   tabs.find( ".ui-tabs-nav" ).append( li );
   tabs.append( "<div id='" + id + "'><ul></ul></div>" );
@@ -57,8 +58,42 @@ function validInputs(travelDate, fromDate, toDate) {
 	return true;
 }
 
-$(document).ready(function(){
+function getFlights(travelDate, fromDate, toDate) {
+	var request = $.ajax({
+		url: "/search",
+		method: "GET",
+		data: { date : travelDate,
+						from: fromDate,
+						to: toDate },
+		dataType: "html"
+	});
 
+	request.done(function( json ) {
+		var flights = JSON.parse(json);
+		$.each(flights, function(key, flight){
+					var date = moment(flight.start.dateTime).format(DATE_FORMAT);
+					$("#tabs-"+date+" ul").append('<li class="item-content">'+
+							"Airline: " + flight.airline.name + " " +
+							"Start: " + " " +
+							flight.start.cityName + ", " +
+							flight.start.countryName + " - " +
+							flight.start.airportName + "  " +
+							"At: " + moment(flight.start.dateTime).format("dddd, MMMM Do YYYY, h:mm:ss a") + " " +
+							"Finish: " + " " +
+							flight.finish.cityName + ", " +
+							flight.finish.countryName + " - " +
+							flight.finish.airportName + "  " +
+							"At: " + moment(flight.finish.dateTime).format("dddd, MMMM Do YYYY, h:mm:ss a") + " " +
+					'</li>');
+			});
+	});
+
+	request.fail(function( jqXHR, textStatus ) {
+		alert( "Request failed: " + textStatus );
+	});
+}
+
+$(document).ready(function(){
   $( "#autocomplete-from" ).autocomplete({
     source: function( request, response ) {
 			$.get("/locations", {
@@ -84,7 +119,6 @@ $(document).ready(function(){
 	$( "#travel-date" ).datepicker({ dateFormat: 'yy-mm-dd' });
 
 	var $body = $("body");
-
 	$(document).on({
 	    ajaxStart: function() { $body.addClass("loading");    },
 	     ajaxStop: function() { $body.removeClass("loading"); }
@@ -109,42 +143,14 @@ $(document).ready(function(){
 			return;
 		}
 
-		var request = $.ajax({
-		  url: "/search",
-		  method: "GET",
-		  data: { date : travelDate.val(),
-			 				from: fromCode,
-							to: toCode},
-		  dataType: "html"
+		$.each(getDates(travelDate.val()), function(key, date){
+			addTab(date, fromCode, toCode);
 		});
 
-		request.done(function( json ) {
-			$.each(getDates(travelDate.val()), function(key, date){
-				addTab(date);
-			});
-
-			var flights = JSON.parse(json);
-			$.each(flights, function(key, flight){
-						var date = moment(flight.start.dateTime).format(DATE_FORMAT);
-            $("#tabs-"+date+" ul").append('<li class="item-content">'+
-																			"Airline: " + flight.airline.name + " " +
-																			"Start: " + " " +
-																			flight.start.cityName + ", " +
-																			flight.start.countryName + " - " +
-																			flight.start.airportName + "  " +
-																			"At: " + moment(flight.start.dateTime).format("dddd, MMMM Do YYYY, h:mm:ss a") + " " +
-																			"Finish: " + " " +
-																			flight.finish.cityName + ", " +
-																			flight.finish.countryName + " - " +
-																			flight.finish.airportName + "  " +
-																			"At: " + moment(flight.finish.dateTime).format("dddd, MMMM Do YYYY, h:mm:ss a") + " " +
-																	'</li>');
-        });
-		});
-
-		request.fail(function( jqXHR, textStatus ) {
-		  alert( "Request failed: " + textStatus );
-		});
+		getFlights(travelDate.val(), fromCode, toCode);
   });
 
+	$(document).on('click', '.ui-tabs-anchor', function(event){
+		getFlights($(this).data("date"), $(this).data("from"), $(this).data("to"));
+  });
 })
