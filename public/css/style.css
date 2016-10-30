@@ -57,7 +57,7 @@ ul.tabs li.current {
 .selectable .ui-selecting { background: #FECA40; }
 .selectable .ui-selected { background: #F39814; color: white; }
 .selectable { list-style-type: none; margin: 0; padding: 0; width: 100%; }
-.selectable li { margin: 4px; padding: 0.5em; font-size: 1.2em; height: 40px; }
+.selectable li { margin: 4px; padding: 0.5em; font-size: 12px; height: 100px; }
 
 /* Start by setting display:none to make this hidden.
    Then we position it in relation to the viewport window

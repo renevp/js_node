@@ -21,14 +21,17 @@ function getDates(travelDate){
 }
 
 function addTab(travelDate, fromCode, toCode) {
-	var tabs = $( "#tabs" ).tabs(),
+	var tabs = $( "#tabs" ).tabs({
+																active: 2
+															}),
+			tabTitle = moment(travelDate).format("MMM Do YY")
 			li = '<li><a href="#tabs-'+travelDate+'" data-date="'+
 			travelDate+'" data-from="'+fromCode+'" data-to="'+toCode+'">'+
-			travelDate+'</a></li>',
+			tabTitle+'</a></li>',
 	    id = "tabs-" + travelDate;
 
   tabs.find( ".ui-tabs-nav" ).append( li );
-  tabs.append( "<div id='" + id + "'><ul></ul></div>" );
+  tabs.append( "<div id='" + id + "'><ul class='myid selectable'></ul></div>" );
   tabs.tabs( "refresh" );
 }
 
@@ -70,21 +73,23 @@ function getFlights(travelDate, fromDate, toDate) {
 
 	request.done(function( json ) {
 		var flights = JSON.parse(json);
+		var count = 1;
 		$.each(flights, function(key, flight){
 					var date = moment(flight.start.dateTime).format(DATE_FORMAT);
-					$("#tabs-"+date+" ul").append('<li class="item-content">'+
-							"Airline: " + flight.airline.name + " " +
-							"Start: " + " " +
+					$("#tabs-"+date+" ul").append('<li id='+count+' class="item-content">'+
+							"<p>Airline: " + flight.airline.name + " </p>" +
+							"<p>Start: " + " " +
 							flight.start.cityName + ", " +
 							flight.start.countryName + " - " +
 							flight.start.airportName + "  " +
-							"At: " + moment(flight.start.dateTime).format("dddd, MMMM Do YYYY, h:mm:ss a") + " " +
-							"Finish: " + " " +
+							"At: " + moment(flight.start.dateTime).format("ddd, MMM Do YY, h:mm a") + " </p>" +
+							"<p>Finish: " + " " +
 							flight.finish.cityName + ", " +
 							flight.finish.countryName + " - " +
 							flight.finish.airportName + "  " +
-							"At: " + moment(flight.finish.dateTime).format("dddd, MMMM Do YYYY, h:mm:ss a") + " " +
+							"At: " + moment(flight.finish.dateTime).format("ddd, MMM Do YY, h:mm a") + " </p>" +
 					'</li>');
+					count++;
 			});
 	});
 
@@ -153,4 +158,9 @@ $(document).ready(function(){
 	$(document).on('click', '.ui-tabs-anchor', function(event){
 		getFlights($(this).data("date"), $(this).data("from"), $(this).data("to"));
   });
+
+	$(document).on('click', "ul[class*=myid] li",function () {
+		$('ul.myid li').removeClass('item-highlight');
+		$(this).addClass('item-highlight');
+	});
 })
