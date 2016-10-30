@@ -21,35 +21,33 @@ function getDates(travelDate){
 }
 
 function addTab(travelDate, fromCode, toCode) {
-	var tabs = $( "#tabs" ).tabs({
-																active: 2
-															}),
+	var tabs = $( "#tabs" ).tabs({ active: 2 }),
 			tabTitle = moment(travelDate).format("MMM Do YY")
-			li = '<li><a href="#tabs-'+travelDate+'" data-date="'+
-			travelDate+'" data-from="'+fromCode+'" data-to="'+toCode+'">'+
-			tabTitle+'</a></li>',
+			li = '<li><a href="#tabs-' + travelDate + '" data-date="' +
+			travelDate + '" data-from="' + fromCode + '" data-to="' + toCode + '">' +
+			tabTitle + '</a></li>',
 	    id = "tabs-" + travelDate;
 
   tabs.find( ".ui-tabs-nav" ).append( li );
-  tabs.append( "<div id='" + id + "'><ul class='myid selectable'></ul></div>" );
+  tabs.append( "<div id='" + id + "'><ul class='flight-id selectable'></ul></div>" );
   tabs.tabs( "refresh" );
 }
 
 function removeTabs(){
 	$( "#tabs" ).find("ul").children().each(function(){
 		var panelId = $(this).attr( "aria-controls" );
-		$( "#tabs" ).find("#"+ panelId).remove();
+		$( "#tabs" ).find("#" + panelId).remove();
 
 		$( "#tabs" ).find(".ui-tabs-nav li:eq(0)").remove();
 		$("#tabs").tabs( "refresh" );
 	});
 }
 
-function validInputs(travelDate, fromDate, toDate) {
+function validFields(travelDate, fromDate, toDate) {
 	if (travelDate == null || travelDate == "" ||
-				fromDate == null || fromDate == "" ||
-				toDate == null || toDate == "") {
-		alert("Can't be empty fields.");
+				fromDate == null || fromDate   == "" ||
+				toDate   == null || toDate     == "") {
+		alert("There are empty fields.");
 		return false;
 	}
 
@@ -65,7 +63,7 @@ function getFlights(travelDate, fromDate, toDate) {
 	var request = $.ajax({
 		url: "/search",
 		method: "GET",
-		data: { date : travelDate,
+		data: { date: travelDate,
 						from: fromDate,
 						to: toDate },
 		dataType: "html"
@@ -76,7 +74,7 @@ function getFlights(travelDate, fromDate, toDate) {
 		var count = 1;
 		$.each(flights, function(key, flight){
 					var date = moment(flight.start.dateTime).format(DATE_FORMAT);
-					$("#tabs-"+date+" ul").append('<li id='+count+' class="item-content">'+
+					$("#tabs-" + date + " ul").append('<li id=' + count + ' class="item-content">'+
 							"<p>Airline: " + flight.airline.name + " </p>" +
 							"<p>Start: " + " " +
 							flight.start.cityName + ", " +
@@ -126,21 +124,22 @@ $(document).ready(function(){
 	var $body = $("body");
 	$(document).on({
 	    ajaxStart: function() { $body.addClass("loading");    },
-	     ajaxStop: function() { $body.removeClass("loading"); }
+	    ajaxStop: function()  { $body.removeClass("loading"); }
 	});
 
-	$("button").click(function(){
+	$("#search").click(function(){
 		removeTabs();
 
 		var travelDate = $( "#travel-date" );
-		var fromDate = $( "#autocomplete-from" );
-		var toDate = $( "#autocomplete-to" );
+		var fromDate   = $( "#autocomplete-from" );
+		var toDate     = $( "#autocomplete-to" );
 
-		if (!validInputs(travelDate.val(), fromDate.val(), toDate.val())) {
+		if (!validFields(travelDate.val(), fromDate.val(), toDate.val())) {
 			return;
 		}
 
 		try {
+			// Extract airport code from the input
 			var fromCode = fromDate.val().split("(")[1].substring(0, 3);
 			var toCode = toDate.val().split("(")[1].substring(0, 3);
 		} catch (e) {
@@ -148,19 +147,27 @@ $(document).ready(function(){
 			return;
 		}
 
+		// Get Range of dates and create tabs
 		$.each(getDates(travelDate.val()), function(key, date){
 			addTab(date, fromCode, toCode);
 		});
 
+		// Search for flights using ajax
 		getFlights(travelDate.val(), fromCode, toCode);
   });
 
+	// Search flights for a specific tab
 	$(document).on('click', '.ui-tabs-anchor', function(event){
-		getFlights($(this).data("date"), $(this).data("from"), $(this).data("to"));
+		var date = $(this).data("date");
+		var results = $("#tabs-" + date).find("ul").children().length;
+		if (results == 0) {
+			getFlights(date, $(this).data("from"), $(this).data("to"));
+		}
   });
 
-	$(document).on('click', "ul[class*=myid] li",function () {
-		$('ul.myid li').removeClass('item-highlight');
+	// Select a flight from the list
+	$(document).on('click', "ul[class*=flight-id] li",function () {
+		$('ul.flight-id li').removeClass('item-highlight');
 		$(this).addClass('item-highlight');
 	});
 })
