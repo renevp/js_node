@@ -21,14 +21,24 @@ function getDates(travelDate){
 
 }
 
-function addTab(tabTitle, tabTemplate, tabCounter, tabs) {
-  var label = tabTitle || "Tab " + tabCounter,
-    id = "tabs-" + tabCounter,
-    li = tabTemplate;
+function addTab(date) {
+	var tabs = $( "#tabs" ).tabs(),
+			li = '<li><a href="#tabs-'+date+'">'+date+'</a></li>',
+	    id = "tabs-" + date;
 
   tabs.find( ".ui-tabs-nav" ).append( li );
   tabs.append( "<div id='" + id + "'><ul></ul></div>" );
   tabs.tabs( "refresh" );
+}
+
+function removeTabs(){
+	$( "#tabs" ).find("ul").children().each(function(){
+		var panelId = $(this).attr( "aria-controls" );
+		$( "#tabs" ).find("#"+ panelId).remove();
+
+		$( "#tabs" ).find(".ui-tabs-nav li:eq(0)").remove();
+		$("#tabs").tabs( "refresh" );
+	});
 }
 
 function validInputs(travelDate, fromDate, toDate) {
@@ -80,25 +90,8 @@ $(document).ready(function(){
 	     ajaxStop: function() { $body.removeClass("loading"); }
 	});
 
-
 	$("button").click(function(){
-		var flag = false;
-		$( "#tabs" ).find("ul").children().each(function(){
-			var panelId = $(this).attr( "aria-controls" );
-			$( "#tabs" ).find("#"+ panelId).remove();
-
-			var tabIndex = $(this).attr( "tabindex" );
-			$( "#tabs" ).find(".ui-tabs-nav li:eq(" + tabIndex + ")").remove();
-
-			$("#tabs").tabs( "refresh" );
-			flag = true;
-		});
-
-		// if (flag) {
-		// 	return;
-		// }
-
-		var tabs = $( "#tabs" ).tabs();
+		removeTabs();
 
 		var travelDate = $( "#travel-date" );
 		var fromDate = $( "#autocomplete-from" );
@@ -108,23 +101,26 @@ $(document).ready(function(){
 			return;
 		}
 
+		try {
+			var fromCode = fromDate.val().split("(")[1].substring(0, 3);
+			var toCode = toDate.val().split("(")[1].substring(0, 3);
+		} catch (e) {
+			alert("Please insert a correct location.");
+			return;
+		}
+
 		var request = $.ajax({
-		  url: "/search_test",
+		  url: "/search",
 		  method: "GET",
 		  data: { date : travelDate.val(),
-			 				from: fromDate.val().split("(")[1].substring(0, 3),
-							to: toDate.val().split("(")[1].substring(0, 3) },
+			 				from: fromCode,
+							to: toCode},
 		  dataType: "html"
 		});
 
 		request.done(function( json ) {
-			var tabCounter = 1;
-			$.each(getDates(travelDate), function(key, date){
-				var tabTitle = date,
-			      tabTemplate = '<li><a href="#tabs-'+date+'">'+date+'</a></li>';
-
-				addTab(tabTitle, tabTemplate, date, tabs);
-				tabCounter++;
+			$.each(getDates(travelDate.val()), function(key, date){
+				addTab(date);
 			});
 
 			var flights = JSON.parse(json);
@@ -144,9 +140,6 @@ $(document).ready(function(){
 																			"At: " + moment(flight.finish.dateTime).format("dddd, MMMM Do YYYY, h:mm:ss a") + " " +
 																	'</li>');
         });
-			travelDate.val("");
-			fromDate.val("");
-			toDate.val("");
 		});
 
 		request.fail(function( jqXHR, textStatus ) {
