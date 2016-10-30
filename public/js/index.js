@@ -31,6 +31,22 @@ function addTab(tabTitle, tabTemplate, tabCounter, tabs) {
   tabs.tabs( "refresh" );
 }
 
+function validInputs(travelDate, fromDate, toDate) {
+	if (travelDate == null || travelDate == "" ||
+				fromDate == null || fromDate == "" ||
+				toDate == null || toDate == "") {
+		alert("Can't be empty fields.");
+		return false;
+	}
+
+	if (moment(travelDate).isBefore(moment().subtract(1, 'days'))) {
+		alert("Date can't be past.");
+		return false;
+	}
+
+	return true;
+}
+
 $(document).ready(function(){
 
   $( "#autocomplete-from" ).autocomplete({
@@ -57,24 +73,56 @@ $(document).ready(function(){
 
 	$( "#travel-date" ).datepicker({ dateFormat: 'yy-mm-dd' });
 
+	var $body = $("body");
+
+	$(document).on({
+	    ajaxStart: function() { $body.addClass("loading");    },
+	     ajaxStop: function() { $body.removeClass("loading"); }
+	});
+
+
 	$("button").click(function(){
+		var flag = false;
+		$( "#tabs" ).find("ul").children().each(function(){
+			var panelId = $(this).attr( "aria-controls" );
+			$( "#tabs" ).find("#"+ panelId).remove();
+
+			var tabIndex = $(this).attr( "tabindex" );
+			$( "#tabs" ).find(".ui-tabs-nav li:eq(" + tabIndex + ")").remove();
+
+			$("#tabs").tabs( "refresh" );
+			flag = true;
+		});
+
+		// if (flag) {
+		// 	return;
+		// }
+
+		var tabs = $( "#tabs" ).tabs();
+
+		var travelDate = $( "#travel-date" );
+		var fromDate = $( "#autocomplete-from" );
+		var toDate = $( "#autocomplete-to" );
+
+		if (!validInputs(travelDate.val(), fromDate.val(), toDate.val())) {
+			return;
+		}
 
 		var request = $.ajax({
-		  url: "/search",
+		  url: "/search_test",
 		  method: "GET",
-		  data: { date : $( "#travel-date" ).val(),
-			 				from: $( "#autocomplete-from" ).val().split("(")[1].substring(0, 3),
-							to: $( "#autocomplete-to" ).val().split("(")[1].substring(0, 3) },
+		  data: { date : travelDate.val(),
+			 				from: fromDate.val().split("(")[1].substring(0, 3),
+							to: toDate.val().split("(")[1].substring(0, 3) },
 		  dataType: "html"
 		});
 
 		request.done(function( json ) {
-			var travelDate = $( "#travel-date" ).val();
 			var tabCounter = 1;
 			$.each(getDates(travelDate), function(key, date){
 				var tabTitle = date,
 			      tabTemplate = '<li><a href="#tabs-'+date+'">'+date+'</a></li>';
-				var tabs = $( "#tabs" ).tabs();
+
 				addTab(tabTitle, tabTemplate, date, tabs);
 				tabCounter++;
 			});
@@ -96,6 +144,9 @@ $(document).ready(function(){
 																			"At: " + moment(flight.finish.dateTime).format("dddd, MMMM Do YYYY, h:mm:ss a") + " " +
 																	'</li>');
         });
+			travelDate.val("");
+			fromDate.val("");
+			toDate.val("");
 		});
 
 		request.fail(function( jqXHR, textStatus ) {
