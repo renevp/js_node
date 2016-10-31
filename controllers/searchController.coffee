@@ -87,14 +87,6 @@ routes = (searchModel) ->
         res.status(500).send(e)
   )
 
-  router.get('/search_test', (req, res) ->
-    console.log "papapapapapapapap"
-    fs = require 'fs'
-    obj = JSON.parse(fs.readFileSync('./test/fixtures/search_sample.json', 'utf8'))
-    res.type('json')
-    res.send(JSON.stringify(obj, null, 2))
-  )
-
   router
 
 module.exports = routes
